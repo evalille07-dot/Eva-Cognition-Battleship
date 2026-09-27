@@ -1,0 +1,412 @@
+/**
+ * styles.css — all styling for Neon Battleship.
+ * Retro arcade theme: near-black navy background, cyan (player), magenta
+ * (enemy), green (valid), red (hits/invalid). CRT scanline overlay, glow on
+ * active elements, hit flash, dimmed misses, full highlight on sunk ships.
+ * Honors prefers-reduced-motion by disabling animations and glow pulses.
+ */
+
+:root {
+  --bg: #050816;
+  --panel: #0a1030;
+  --cyan: #00f0ff;
+  --magenta: #ff2bd6;
+  --green: #39ff6a;
+  --red: #ff3355;
+  --text: #d6e4ff;
+  --dim: #8a97c0;
+  --grid-line: rgba(0, 240, 255, 0.28);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+/* ---- CRT scanlines: subtle, never harms readability ---- */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.14) 0px,
+    rgba(0, 0, 0, 0.14) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+.site-header {
+  text-align: center;
+  padding: 16px 8px 8px;
+}
+
+.logo {
+  margin: 0;
+  font-size: 20px;
+  color: var(--cyan);
+  text-shadow: 0 0 8px var(--cyan), 0 0 24px rgba(0, 240, 255, 0.5);
+  animation: glowPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% { text-shadow: 0 0 8px var(--cyan), 0 0 24px rgba(0, 240, 255, 0.5); }
+  50% { text-shadow: 0 0 12px var(--cyan), 0 0 34px rgba(0, 240, 255, 0.8); }
+}
+
+#status-line {
+  margin: 10px auto 0;
+  min-height: 1.6em;
+  font-size: 11px;
+  color: var(--green);
+  text-shadow: 0 0 6px rgba(57, 255, 106, 0.7);
+}
+
+/* ---- Screens ---- */
+/* The hidden attribute loses to `display: flex` — restore it explicitly. */
+[hidden] {
+  display: none !important;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 12px;
+}
+
+.start-title {
+  font-size: 22px;
+  color: var(--magenta);
+  text-shadow: 0 0 10px var(--magenta), 0 0 30px rgba(255, 43, 214, 0.5);
+  margin: 24px 0 0;
+  text-align: center;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--cyan);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+  padding: 16px 20px;
+  max-width: 420px;
+}
+
+.panel h3 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: var(--cyan);
+}
+
+.panel ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.panel li {
+  margin: 6px 0;
+}
+
+/* ---- Buttons ---- */
+.arcade-btn {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 14px 28px;
+  color: var(--green);
+  background: transparent;
+  border: 2px solid var(--green);
+  box-shadow: 0 0 10px rgba(57, 255, 106, 0.4), inset 0 0 8px rgba(57, 255, 106, 0.15);
+  cursor: pointer;
+  text-shadow: 0 0 6px rgba(57, 255, 106, 0.8);
+  transition: transform 0.08s ease, box-shadow 0.15s ease;
+}
+
+.arcade-btn:hover,
+.arcade-btn:focus-visible {
+  box-shadow: 0 0 18px rgba(57, 255, 106, 0.8), inset 0 0 12px rgba(57, 255, 106, 0.3);
+  outline: none;
+}
+
+.arcade-btn:active {
+  transform: scale(0.96);
+}
+
+.arcade-btn.small {
+  font-size: 9px;
+  padding: 8px 14px;
+}
+
+.arcade-btn[aria-disabled='true'] {
+  color: var(--dim);
+  border-color: var(--dim);
+  box-shadow: none;
+  text-shadow: none;
+  cursor: not-allowed;
+}
+
+#controls {
+  display: flex;
+  gap: 12px;
+}
+
+/* ---- Boards ---- */
+.boards {
+  display: flex;
+  gap: 36px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.board-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.board-title {
+  font-size: 11px;
+  margin: 0;
+}
+
+.player-side .board-title {
+  color: var(--cyan);
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.7);
+}
+
+.enemy-side .board-title {
+  color: var(--magenta);
+  text-shadow: 0 0 8px rgba(255, 43, 214, 0.7);
+}
+
+/* 11x11 grid: first row/column are the A–J / 1–10 coordinate labels. */
+.board {
+  display: grid;
+  grid-template-columns: 14px repeat(10, 1fr);
+  grid-template-rows: 14px repeat(10, 1fr);
+  gap: 2px;
+  width: min(94vw, 430px);
+  padding: 4px;
+  background: var(--panel);
+}
+
+.player-side .board {
+  border: 1px solid var(--cyan);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.25);
+}
+
+.enemy-side .board {
+  border: 1px solid var(--magenta);
+  box-shadow: 0 0 14px rgba(255, 43, 214, 0.25);
+}
+
+.coord {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: var(--dim);
+}
+
+.cell {
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid var(--grid-line);
+  background: rgba(0, 240, 255, 0.04);
+  cursor: crosshair;
+  font-family: inherit;
+}
+
+.enemy-side .cell {
+  border-color: rgba(255, 43, 214, 0.28);
+  background: rgba(255, 43, 214, 0.04);
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: -2px;
+}
+
+/* Player ship hull */
+.cell-ship {
+  background: rgba(0, 240, 255, 0.28);
+  border-color: var(--cyan);
+}
+
+/* Placement preview */
+.cell-preview-ok {
+  background: rgba(57, 255, 106, 0.4);
+  border-color: var(--green);
+  box-shadow: 0 0 8px rgba(57, 255, 106, 0.7);
+}
+
+.cell-preview-bad {
+  background: rgba(255, 51, 85, 0.4);
+  border-color: var(--red);
+}
+
+/* Misses: dim marker dot */
+.cell-miss {
+  position: relative;
+  background: rgba(138, 151, 192, 0.12);
+}
+
+.cell-miss::after {
+  content: '';
+  position: absolute;
+  inset: 40%;
+  border-radius: 50%;
+  background: var(--dim);
+}
+
+/* Hits: brief white->red flash, then steady red */
+.cell-hit {
+  background: var(--red);
+  border-color: var(--red);
+  animation: hitFlash 0.45s ease-out;
+}
+
+@keyframes hitFlash {
+  0% { background: #ffffff; box-shadow: 0 0 18px #ffffff; }
+  100% { background: var(--red); box-shadow: none; }
+}
+
+/* Sunk: full highlight across every cell of the ship */
+.cell-sunk {
+  background: var(--red);
+  border-color: #ffffff;
+  box-shadow: 0 0 12px rgba(255, 51, 85, 0.9), inset 0 0 6px #ffffff;
+}
+
+/* Reveal of unsunk enemy ships on the end screen */
+.cell-revealed {
+  background: rgba(255, 43, 214, 0.3);
+  border-color: var(--magenta);
+  border-style: dashed;
+}
+
+/* Fleet roster under each board */
+.fleet-status {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  font-size: 8px;
+  max-width: 430px;
+}
+
+.fleet-status li {
+  color: var(--dim);
+}
+
+.fleet-status li.sunk {
+  color: var(--red);
+  text-decoration: line-through;
+}
+
+.fleet-status li.afloat {
+  color: var(--green);
+}
+
+/* ---- End overlay ---- */
+#end-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 8, 22, 0.92);
+}
+
+#end-overlay[hidden] {
+  display: none;
+}
+
+.end-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  padding: 32px;
+  background: var(--panel);
+  border: 2px solid var(--cyan);
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.4);
+  max-width: 92vw;
+}
+
+#end-title {
+  font-size: 26px;
+  margin: 0;
+}
+
+#end-title.victory {
+  color: var(--green);
+  text-shadow: 0 0 14px var(--green);
+}
+
+#end-title.defeat {
+  color: var(--red);
+  text-shadow: 0 0 14px var(--red);
+}
+
+#end-stats {
+  border-collapse: collapse;
+  font-size: 9px;
+}
+
+#end-stats th,
+#end-stats td {
+  border: 1px solid rgba(138, 151, 192, 0.4);
+  padding: 8px 14px;
+  text-align: center;
+}
+
+#end-stats th {
+  color: var(--cyan);
+}
+
+#end-stats td {
+  color: var(--text);
+}
+
+/* ---- Responsive: stack boards below 768px; cells stay >= 32px ---- */
+@media (max-width: 768px) {
+  .boards {
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  /* 94vw at 390px leaves ~33px per cell after labels/gaps (>= 32px rule). */
+  .board {
+    width: 94vw;
+    max-width: 420px;
+  }
+}
+
+/* ---- Reduced motion: no flashes or glow animation ---- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
