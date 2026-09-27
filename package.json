@@ -1,0 +1,16 @@
+{
+  "name": "neon-battleship",
+  "version": "1.0.0",
+  "description": "Single-player Battleship vs a medium AI in retro neon arcade style. Plain HTML/CSS/vanilla JS.",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve .",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test tests/unit/",
+    "test:e2e": "npx playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "serve": "^14.2.4"
+  }
+}
