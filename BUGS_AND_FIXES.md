@@ -136,3 +136,25 @@ Real bugs found during development (not planned work).
 - **Prevention:** E2E test "browser Back returns to the main menu from
   placement and battle" asserts a clean reset from both screens
   (`tests/e2e/game.spec.js`).
+
+## 11. Back button edge cases: stale game entries and a leaking AI timer
+
+- **Bug:** Three follow-up defects in the bug-10 fix: (a) PLAY AGAIN then
+  START then Back reopened a fresh placement instead of the menu, because
+  PLAY AGAIN left history on the old game entry; (b) reloading mid-game
+  made START push a second game entry, so Back landed on the stale one;
+  (c) pressing Back during the AI's 600ms reply delay let its timer fire
+  into the next game as an early/out-of-turn shot.
+- **How found:** Devin Review on PR #5.
+- **Root cause:** History state was written only on START, so it could drift
+  from the screen actually shown (menu rendered over a 'game' entry after
+  PLAY AGAIN or a reload), and the AI reply `setTimeout` was never tracked,
+  so `resetGame` could not cancel it.
+- **Fix:** History state now always mirrors the visible screen — init and
+  PLAY AGAIN `replaceState({screen:'menu'})`, and the Forward path
+  re-stamps `({screen:'game'})`. The AI reply timer is stored in `aiTimer`
+  and cleared in `resetGame` (commit below).
+- **Prevention:** Three e2e tests in `tests/e2e/game.spec.js`: "Back after
+  PLAY AGAIN + START still lands on the main menu", "Back after reload on a
+  game entry still lands on the main menu", and "Back during the AI turn
+  cancels its pending reply".
