@@ -132,7 +132,7 @@ Real bugs found during development (not planned work).
   nowhere to go Back to.
 - **Fix:** `handleStart` now `history.pushState({ screen: 'game' })`, and a
   `popstate` listener returns to the main menu (full `resetGame`) on Back,
-  or re-enters a fresh placement on Forward (commit below).
+  or re-enters a fresh placement on Forward (commit `6effb9c`).
 - **Prevention:** E2E test "browser Back returns to the main menu from
   placement and battle" asserts a clean reset from both screens
   (`tests/e2e/game.spec.js`).
