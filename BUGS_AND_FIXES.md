@@ -153,7 +153,7 @@ Real bugs found during development (not planned work).
 - **Fix:** History state now always mirrors the visible screen — init and
   PLAY AGAIN `replaceState({screen:'menu'})`, and the Forward path
   re-stamps `({screen:'game'})`. The AI reply timer is stored in `aiTimer`
-  and cleared in `resetGame` (commit below).
+  and cleared in `resetGame` (commit `c94b282`).
 - **Prevention:** Three e2e tests in `tests/e2e/game.spec.js`: "Back after
   PLAY AGAIN + START still lands on the main menu", "Back after reload on a
   game entry still lands on the main menu", and "Back during the AI turn
