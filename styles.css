@@ -160,6 +160,19 @@ body {
   gap: 12px;
 }
 
+/* Sound toggle lives in the header, visible on every screen. */
+#mute-btn {
+  margin-top: 12px;
+}
+
+/* Muted (pressed) state: dimmed like a disabled control. */
+#mute-btn[aria-pressed='true'] {
+  color: var(--dim);
+  border-color: var(--dim);
+  box-shadow: none;
+  text-shadow: none;
+}
+
 /* ---- Boards ---- */
 .boards {
   display: flex;

@@ -20,6 +20,10 @@
     <h1 class="logo">NEON BATTLESHIP</h1>
     <!-- Always-visible status line: tells the player what to do next. -->
     <p id="status-line" role="status" aria-live="polite">READY</p>
+    <!-- Sound toggle; aria-pressed="true" means muted. Also bound to the M key. -->
+    <button id="mute-btn" class="arcade-btn small" type="button" aria-pressed="false">
+      SOUND: ON
+    </button>
   </header>
 
   <main>

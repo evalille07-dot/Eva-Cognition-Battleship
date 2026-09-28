@@ -26,6 +26,7 @@ import {
 } from './game.js';
 import { createAI } from './ai.js';
 import { createRng, seedFromUrl } from './rng.js';
+import { initAudio, isMuted, play, setMuted } from './audio.js';
 
 /** Pause before the AI fires so its turn is easy to follow. */
 const AI_TURN_DELAY_MS = 600;
@@ -46,6 +47,7 @@ const els = {
   endTitle: $('end-title'),
   endStats: $('end-stats'),
   playAgainBtn: $('play-again-btn'),
+  muteBtn: $('mute-btn'),
 };
 
 // ---- mutable session state (fully rebuilt on PLAY AGAIN) ----
@@ -275,6 +277,7 @@ function resetGame() {
  * @param {{push?:boolean}} [opts]
  */
 function handleStart({ push = true } = {}) {
+  initAudio(); // user gesture — the AudioContext may be created/resumed here
   if (push) history.pushState({ screen: 'game' }, '');
   else history.replaceState({ screen: 'game' }, '');
   els.startScreen.hidden = true;
@@ -325,10 +328,12 @@ function handlePlacementClick(row, col, e) {
   armedTapKey = null;
   const res = placePlayerShip(game, row, col, orientation);
   if (!res.ok) {
+    play('invalid');
     // Invalid spot: flash the preview red rather than placing.
     showPreview(row, col);
     return;
   }
+  play('place');
   previewAnchor = null;
   clearPreview();
   renderPlayerBoard();
@@ -362,6 +367,8 @@ function handleFire(row, col) {
   if (!game || game.phase !== 'battle' || aiThinking) return;
   const res = fireAt(game, 'player', row, col);
   if (res.result === 'invalid' || res.result === 'already-fired') return;
+  // result is 'miss' | 'hit' | 'sunk' — matching sound names in audio.js
+  play(res.result);
   renderEnemyBoard();
   renderFleetStatus(els.enemyFleet, game.enemyBoard);
   if (res.winner) {
@@ -383,6 +390,7 @@ function enemyTurn() {
   const shot = ai.nextShot();
   const res = fireAt(game, 'enemy', shot.row, shot.col);
   ai.reportResult(shot.row, shot.col, res.result, res.sunkCells);
+  play(res.result, 0.5); // AI reply sounds play quieter than the player's
   renderPlayerBoard();
   renderFleetStatus(els.playerFleet, game.playerBoard);
   aiThinking = false;
@@ -399,6 +407,7 @@ function enemyTurn() {
 function endGame() {
   renderEnemyBoard(true); // reveal any unsunk enemy ships
   const won = game.winner === 'player';
+  play(won ? 'victory' : 'defeat');
   els.endTitle.textContent = won ? 'VICTORY' : 'GAME OVER';
   els.endTitle.className = won ? 'victory' : 'defeat';
   setStatus(won ? 'VICTORY' : 'GAME OVER');
@@ -420,6 +429,19 @@ function endGame() {
   els.playAgainBtn.focus();
 }
 
+/** Keeps the mute button's label and aria-pressed in sync with audio.js. */
+function updateMuteBtn() {
+  const off = isMuted();
+  els.muteBtn.textContent = off ? 'SOUND: OFF' : 'SOUND: ON';
+  els.muteBtn.setAttribute('aria-pressed', String(off));
+}
+
+/** Mute button / M key: toggles sound; the choice persists in localStorage. */
+function handleMuteToggle() {
+  setMuted(!isMuted());
+  updateMuteBtn();
+}
+
 /* ================= WIRING ================= */
 
 seed = seedFromUrl(window.location.search) ?? Math.floor(Math.random() * 2 ** 31);
@@ -431,6 +453,8 @@ resetGame();
 // the stale one.
 history.replaceState({ screen: 'menu' }, '');
 
+updateMuteBtn();
+els.muteBtn.addEventListener('click', handleMuteToggle);
 els.startBtn.addEventListener('click', handleStart);
 els.rotateBtn.addEventListener('click', handleRotate);
 els.undoBtn.addEventListener('click', handleUndo);
@@ -455,4 +479,5 @@ window.addEventListener('popstate', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'r' || e.key === 'R') handleRotate();
+  if (e.key === 'm' || e.key === 'M') handleMuteToggle();
 });
