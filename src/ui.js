@@ -283,6 +283,9 @@ function handleUndo() {
   if (!res.ok) return;
   clearPreview();
   armedTapKey = null;
+  // Drop the preview anchor too — otherwise a later ROTATE repaints a
+  // preview at a cell the player abandoned by undoing.
+  previewAnchor = null;
   renderPlayerBoard();
   const def = FLEET[game.placementIndex];
   setStatus(`Place your ${def.name} (${def.size})`);
