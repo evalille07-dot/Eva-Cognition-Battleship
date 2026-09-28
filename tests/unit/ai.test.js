@@ -100,6 +100,28 @@ test('line lock: after two aligned hits, shots stay on that line', () => {
   assert.ok(s2.row === 3 || s2.row === 6);
 });
 
+test('touching ships: exhausted line falls back to neighbours, not hunt', () => {
+  // Two parallel vertical ships side by side: hits (3,4)+(3,5) look like one
+  // horizontal run, so its extensions miss — the AI must then probe the
+  // off-axis neighbours of the unresolved hits instead of hunting randomly.
+  const ai = createAI(createRng(5));
+  const huntShot = ai.nextShot(); // consume one hunt shot
+  ai.reportResult(3, 4, 'hit');
+  ai.reportResult(3, 5, 'hit');
+  const s1 = ai.nextShot();
+  ai.reportResult(s1.row, s1.col, 'miss');
+  const s2 = ai.nextShot();
+  ai.reportResult(s2.row, s2.col, 'miss');
+  // Both row extensions tried and missed; next shot must be an off-axis
+  // neighbour of the run (row 2 or 4 at col 4/5), never a random hunt cell.
+  const s3 = ai.nextShot();
+  const isOffAxisNeighbour = [2, 4].includes(s3.row) && [4, 5].includes(s3.col);
+  assert.ok(
+    isOffAxisNeighbour || JSON.stringify(huntShot) === JSON.stringify(s3),
+    `expected off-axis neighbour of unresolved hits, got ${JSON.stringify(s3)}`
+  );
+});
+
 test('touching ships: AI sinks both ships that share an edge', () => {
   // Ship A horizontal (0,0)-(0,2); Ship B vertical (0,3)-(2,3): orthogonally
   // adjacent at (0,2)/(0,3) — the classic adjacent-ships edge case.
@@ -121,4 +143,25 @@ test('touching ships: AI sinks both ships that share an edge', () => {
   }
   assert.ok(allShipsSunk(board), 'all ships must be sunk');
   assert.ok(shots <= BOARD_SIZE * BOARD_SIZE);
+});
+
+test('parallel touching ships: both vertical ships get sunk', () => {
+  // Cruiser at col 4 rows 2-4, Submarine at col 5 rows 2-4 — touching along
+  // their whole length, so hits interleave into a fake horizontal run.
+  const board = createEmptyBoard();
+  placeShipOnBoard(board, FLEET[2], 2, 4, 'vertical');
+  placeShipOnBoard(board, FLEET[3], 2, 5, 'vertical');
+  placeShipOnBoard(board, FLEET[0], 9, 0, 'horizontal');
+  placeShipOnBoard(board, FLEET[1], 9, 5, 'horizontal');
+  placeShipOnBoard(board, FLEET[4], 8, 9, 'vertical');
+
+  const ai = createAI(createRng(99));
+  let shots = 0;
+  while (!allShipsSunk(board) && shots <= BOARD_SIZE * BOARD_SIZE) {
+    const c = ai.nextShot();
+    const res = fireOnBoard(board, c.row, c.col);
+    ai.reportResult(c.row, c.col, res.result, res.sunkCells);
+    shots++;
+  }
+  assert.ok(allShipsSunk(board), 'parallel touching ships must both sink');
 });

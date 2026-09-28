@@ -45,3 +45,67 @@ Real bugs found during development (not planned work).
 - **Prevention:** The corrected test itself — it now asserts every burn
   shot is a `miss`, so a repeated cell fails loudly instead of silently
   desynchronising the turn order.
+
+## 4. AI abandoned unresolved hits on parallel touching ships
+
+- **Bug:** Two vertical ships side by side produce hits that look like one
+  horizontal run; the AI line-locked on the fake row, and once both
+  extensions missed it fell back to random hunting while hits were still
+  unresolved.
+- **How found:** Devin Review on PR #1.
+- **Root cause:** `computeTargets` queued only the line extensions for a
+  run — the off-axis neighbours of run cells were never candidates.
+- **Fix:** Line-run cells now also contribute their off-axis neighbours,
+  queued behind the line extensions so line lock still takes priority
+  (commit `b13a121`).
+- **Prevention:** `ai.test.js` gained "exhausted line falls back to
+  neighbours, not hunt" and a "parallel touching ships" full sim.
+
+## 5. Rotating left a stale placement preview
+
+- **Bug:** Pressing R while hovering kept the old-orientation preview
+  painted; the click then used the new orientation, so the highlight could
+  show green where the ship no longer fit.
+- **How found:** Devin Review on PR #1.
+- **Root cause:** `handleRotate` never repainted the preview; the anchor
+  cell wasn't tracked.
+- **Fix:** `showPreview` now records `previewAnchor` and `handleRotate`
+  repaints at that anchor (commit `b13a121`).
+- **Prevention:** Manual playthrough — hover a horizontal anchor near the
+  bottom row, press R, confirm the preview turns red.
+
+## 6. Keyboard placement inherited the touch two-tap rule
+
+- **Bug:** After any touch tap, a keyboard Tab+Enter on a cell only armed a
+  preview; a second Enter was needed to place.
+- **How found:** Devin Review on PR #1.
+- **Root cause:** `pointerWasTouch` was global state from the last
+  `pointerdown`, so keyboard-generated clicks were misclassified as taps.
+- **Fix:** `handlePlacementClick` now receives the event and treats
+  `e.detail === 0` (keyboard activation) as an immediate placement
+  (commit `b13a121`).
+- **Prevention:** Code review — the input classification is per-event now.
+
+## 7. Grid cells under 32px on 375px phones
+
+- **Bug:** At a 375px viewport cells measured ~30.9px — under the 32px tap
+  target (the earlier fix only reached ~33px at 390px).
+- **How found:** Devin Review on PR #1.
+- **Root cause:** 94vw board + 14px label column + 2px gaps didn't leave
+  32px per cell below ~383px.
+- **Fix:** Mobile grid uses `repeat(10, minmax(32px, 1fr))` with a 12px
+  label column, 1px gaps, 2px padding, and horizontal scroll on the wrap for
+  narrower screens (commit `b13a121`).
+- **Prevention:** The mobile e2e test now runs at both 390×844 and
+  375×667 asserting cell size ≥ 32px.
+
+## 8. PLAY AGAIN left a stale ROTATE label
+
+- **Bug:** After finishing a game rotated to vertical, PLAY AGAIN reset the
+  placement orientation to horizontal but the button still read `ROTATE: V`.
+- **How found:** Devin Review on PR #1.
+- **Root cause:** `resetGame` restored `orientation` but not the button
+  text set by `handleRotate`.
+- **Fix:** `resetGame` now sets the label back to `ROTATE: H`
+  (commit `b13a121`).
+- **Prevention:** Manual check — rotate, PLAY AGAIN, verify the label.

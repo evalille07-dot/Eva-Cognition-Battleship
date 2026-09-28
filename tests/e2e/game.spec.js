@@ -143,21 +143,27 @@ test('battle input locking: clicks during AI turn and on fired cells are ignored
   expect(errors).toEqual([]);
 });
 
-test.describe('mobile viewport 390x844', () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+// Check the two narrowest common phone widths — 375px is the tight case.
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 375, height: 667 },
+]) {
+  test.describe(`mobile viewport ${viewport.width}x${viewport.height}`, () => {
+    test.use({ viewport, hasTouch: true });
 
-  test('boards stack vertically and cells are at least 32px', async ({ page }) => {
-    const errors = watchConsole(page);
-    await page.goto(`/?seed=${SEED}`);
-    await page.getByRole('button', { name: 'START' }).tap();
+    test('boards stack vertically and cells are at least 32px', async ({ page }) => {
+      const errors = watchConsole(page);
+      await page.goto(`/?seed=${SEED}`);
+      await page.getByRole('button', { name: 'START' }).tap();
 
-    const playerBox = await page.locator('#player-board').boundingBox();
-    const enemyBox = await page.locator('#enemy-board').boundingBox();
-    expect(enemyBox.y).toBeGreaterThan(playerBox.y + playerBox.height - 1);
+      const playerBox = await page.locator('#player-board').boundingBox();
+      const enemyBox = await page.locator('#enemy-board').boundingBox();
+      expect(enemyBox.y).toBeGreaterThan(playerBox.y + playerBox.height - 1);
 
-    const cellBox = await page.locator('#enemy-board .cell').first().boundingBox();
-    expect(cellBox.width).toBeGreaterThanOrEqual(32);
-    expect(cellBox.height).toBeGreaterThanOrEqual(32);
-    expect(errors).toEqual([]);
+      const cellBox = await page.locator('#enemy-board .cell').first().boundingBox();
+      expect(cellBox.width).toBeGreaterThanOrEqual(32);
+      expect(cellBox.height).toBeGreaterThanOrEqual(32);
+      expect(errors).toEqual([]);
+    });
   });
-});
+}
