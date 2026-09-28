@@ -143,6 +143,29 @@ test('battle input locking: clicks during AI turn and on fired cells are ignored
   expect(errors).toEqual([]);
 });
 
+test('browser Back returns to the main menu from placement and battle', async ({ page }) => {
+  const errors = watchConsole(page);
+  await page.goto(`/?seed=${SEED}`);
+  await page.getByRole('button', { name: 'START' }).click();
+
+  // Back during placement -> start screen, state reset.
+  await page.locator('#player-board [data-row="0"][data-col="0"]').click();
+  await page.goBack();
+  await expect(page.locator('#start-screen')).toBeVisible();
+  await expect(page.locator('#status-line')).toHaveText('READY');
+  await expect(page.locator('#player-board .cell-ship')).toHaveCount(0);
+
+  // Back during battle -> same clean reset.
+  await page.getByRole('button', { name: 'START' }).click();
+  await placePlayerFleet(page);
+  await page.locator('#enemy-board [data-row="9"][data-col="9"]').click();
+  await page.goBack();
+  await expect(page.locator('#start-screen')).toBeVisible();
+  await expect(page.locator('#status-line')).toHaveText('READY');
+  await expect(page.locator('#enemy-board .cell-hit, #enemy-board .cell-miss')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 // Check the two narrowest common phone widths — 375px is the tight case.
 for (const viewport of [
   { width: 390, height: 844 },

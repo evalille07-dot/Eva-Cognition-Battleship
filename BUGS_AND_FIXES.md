@@ -121,3 +121,18 @@ Real bugs found during development (not planned work).
 - **Fix:** `handleUndo` now nulls `previewAnchor` (commit `e1a4b72`).
 - **Prevention:** Code review — undo now resets all preview state
   (`armedTapKey`, `previewAnchor`, painted cells) together.
+
+## 10. Browser Back button did nothing
+
+- **Bug:** Clicking the browser Back button during a game did not return to
+  the main menu — nothing happened.
+- **How found:** Manual playthrough reported by Eva.
+- **Root cause:** The game is a single static page; screens are toggled with
+  `hidden`, and no history entries were ever pushed, so the browser had
+  nowhere to go Back to.
+- **Fix:** `handleStart` now `history.pushState({ screen: 'game' })`, and a
+  `popstate` listener returns to the main menu (full `resetGame`) on Back,
+  or re-enters a fresh placement on Forward (commit `6effb9c`).
+- **Prevention:** E2E test "browser Back returns to the main menu from
+  placement and battle" asserts a clean reset from both screens
+  (`tests/e2e/game.spec.js`).
