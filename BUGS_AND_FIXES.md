@@ -109,3 +109,15 @@ Real bugs found during development (not planned work).
 - **Fix:** `resetGame` now sets the label back to `ROTATE: H`
   (commit `b13a121`).
 - **Prevention:** Manual check — rotate, PLAY AGAIN, verify the label.
+
+## 9. Undo resurrected the cleared placement preview on rotate
+
+- **Bug:** After placing a ship, hovering a new cell, then pressing UNDO,
+  the preview was cleared — but a later ROTATE repainted a preview at the
+  abandoned anchor cell even though the pointer had moved on.
+- **How found:** Devin Review follow-up flag on PR #2 (fixed via PR #3).
+- **Root cause:** `handleUndo` cleared the painted preview but left
+  `previewAnchor` set, so `handleRotate` repainted the stale anchor.
+- **Fix:** `handleUndo` now nulls `previewAnchor` (commit `e1a4b72`).
+- **Prevention:** Code review — undo now resets all preview state
+  (`armedTapKey`, `previewAnchor`, painted cells) together.
