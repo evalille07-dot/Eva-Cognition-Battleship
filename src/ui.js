@@ -261,8 +261,16 @@ function resetGame() {
   setStatus('READY');
 }
 
-/** START button: leaves the start screen and begins placement. */
-function handleStart() {
+/**
+ * START button: leaves the start screen and begins placement.
+ * Pushes a 'game' history entry so the browser Back button can return to
+ * the main menu — the game is a single static page, so without this entry
+ * Back is a no-op. `push` is false when we arrive via history navigation
+ * itself (Forward), which already carries the state.
+ * @param {{push?:boolean}} [opts]
+ */
+function handleStart({ push = true } = {}) {
+  if (push) history.pushState({ screen: 'game' }, '');
   els.startScreen.hidden = true;
   els.gameScreen.hidden = false;
   const def = FLEET[0];
@@ -417,6 +425,18 @@ els.startBtn.addEventListener('click', handleStart);
 els.rotateBtn.addEventListener('click', handleRotate);
 els.undoBtn.addEventListener('click', handleUndo);
 els.playAgainBtn.addEventListener('click', resetGame);
+// Browser Back/Forward: Back from any game screen pops the 'game' entry and
+// lands on the main menu — resetGame abandons the run and shows the start
+// screen. Forward back into the game starts a fresh placement.
+window.addEventListener('popstate', (e) => {
+  if (e.state && e.state.screen === 'game') {
+    if (!els.startScreen.hidden) return; // already on the game screen
+    resetGame();
+    handleStart({ push: false });
+  } else if (els.startScreen.hidden || !els.endOverlay.hidden) {
+    resetGame();
+  }
+});
 document.addEventListener('keydown', (e) => {
   if (e.key === 'r' || e.key === 'R') handleRotate();
 });
