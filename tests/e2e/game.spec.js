@@ -166,6 +166,57 @@ test('browser Back returns to the main menu from placement and battle', async ({
   expect(errors).toEqual([]);
 });
 
+test('Back after PLAY AGAIN + START still lands on the main menu', async ({ page }) => {
+  const errors = watchConsole(page);
+  await page.goto(`/?seed=${SEED}`);
+  await page.getByRole('button', { name: 'START' }).click();
+  await placePlayerFleet(page);
+  for (const c of enemyCellsFor(SEED)) {
+    await fireAndAwaitTurn(page, c.row, c.col);
+    if (await page.locator('#end-overlay').isVisible()) break;
+  }
+  await page.getByRole('button', { name: 'PLAY AGAIN' }).click();
+  await page.getByRole('button', { name: 'START' }).click();
+  await page.goBack();
+  // Must reach the menu — not a fresh placement on the stale game entry.
+  await expect(page.locator('#start-screen')).toBeVisible();
+  await expect(page.locator('#status-line')).toHaveText('READY');
+  expect(errors).toEqual([]);
+});
+
+test('Back after reload on a game entry still lands on the main menu', async ({ page }) => {
+  const errors = watchConsole(page);
+  await page.goto(`/?seed=${SEED}`);
+  await page.getByRole('button', { name: 'START' }).click();
+  await page.reload(); // menu shows again on the old 'game' history entry
+  await page.getByRole('button', { name: 'START' }).click();
+  await page.goBack();
+  await expect(page.locator('#start-screen')).toBeVisible();
+  await expect(page.locator('#status-line')).toHaveText('READY');
+  expect(errors).toEqual([]);
+});
+
+test('Back during the AI turn cancels its pending reply', async ({ page }) => {
+  const errors = watchConsole(page);
+  await page.goto(`/?seed=${SEED}`);
+  await page.getByRole('button', { name: 'START' }).click();
+  await placePlayerFleet(page);
+  // Fire, then Back within the 600ms AI delay — the timer must not leak
+  // into the next game as an early/out-of-turn enemy shot.
+  await page.locator('#enemy-board [data-row="9"][data-col="9"]').click();
+  await page.goBack();
+  await page.getByRole('button', { name: 'START' }).click();
+  await placePlayerFleet(page);
+  await page.locator('#enemy-board [data-row="8"][data-col="8"]').click();
+  await page.waitForFunction(() =>
+    document.getElementById('status-line').textContent.includes('Your turn')
+  );
+  // Exactly one AI reply on the player board — the abandoned game's timer
+  // did not fire into this battle.
+  await expect(page.locator('#player-board .cell-hit, #player-board .cell-miss')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
 // Check the two narrowest common phone widths — 375px is the tight case.
 for (const viewport of [
   { width: 390, height: 844 },

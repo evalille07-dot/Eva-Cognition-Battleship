@@ -55,6 +55,8 @@ let rng; // rng stream owned by the AI
 let seed; // seed from ?seed= or generated once per page load
 let orientation; // 'horizontal' | 'vertical' placement toggle
 let aiThinking; // true between the player's shot and the AI's reply:
+let aiTimer; // pending enemyTurn timeout id — cleared on reset so a stale
+// AI reply from an abandoned game can't fire into a fresh one
 // this flag is the UI half of the turn lock — enemy-board clicks landing
 // while it is set are dropped before they can reach game.js.
 let armedTapKey; // last touch-tapped cell ("r,c"); a second tap confirms
@@ -244,6 +246,8 @@ function resetGame() {
   game = createGame();
   orientation = 'horizontal';
   aiThinking = false;
+  clearTimeout(aiTimer);
+  aiTimer = undefined;
   armedTapKey = null;
   previewAnchor = null;
   previewKeys = new Set();
@@ -266,11 +270,13 @@ function resetGame() {
  * Pushes a 'game' history entry so the browser Back button can return to
  * the main menu — the game is a single static page, so without this entry
  * Back is a no-op. `push` is false when we arrive via history navigation
- * itself (Forward), which already carries the state.
+ * itself (Forward): the entry already exists, so its state is re-stamped
+ * to keep the invariant that the current entry mirrors the visible screen.
  * @param {{push?:boolean}} [opts]
  */
 function handleStart({ push = true } = {}) {
   if (push) history.pushState({ screen: 'game' }, '');
+  else history.replaceState({ screen: 'game' }, '');
   els.startScreen.hidden = true;
   els.gameScreen.hidden = false;
   const def = FLEET[0];
@@ -368,7 +374,7 @@ function handleFire(row, col) {
       ? `You sunk their ${res.ship.name}! Enemy is firing...`
       : 'Enemy is firing...'
   );
-  setTimeout(enemyTurn, AI_TURN_DELAY_MS);
+  aiTimer = setTimeout(enemyTurn, AI_TURN_DELAY_MS);
 }
 
 /** The AI's delayed reply shot; then control returns to the player. */
@@ -420,11 +426,21 @@ seed = seedFromUrl(window.location.search) ?? Math.floor(Math.random() * 2 ** 31
 buildBoard(els.playerBoard, 'player');
 buildBoard(els.enemyBoard, 'enemy');
 resetGame();
+// A reload may have restored a 'game' entry while the menu is on screen;
+// re-stamp it 'menu' so START pushes a fresh entry and Back can't land on
+// the stale one.
+history.replaceState({ screen: 'menu' }, '');
 
 els.startBtn.addEventListener('click', handleStart);
 els.rotateBtn.addEventListener('click', handleRotate);
 els.undoBtn.addEventListener('click', handleUndo);
-els.playAgainBtn.addEventListener('click', resetGame);
+els.playAgainBtn.addEventListener('click', () => {
+  resetGame();
+  // PLAY AGAIN shows the menu while history still sits on the game entry;
+  // re-stamp it as 'menu' or a later Back from the next game would land on
+  // this stale entry and reopen placement instead of the menu.
+  history.replaceState({ screen: 'menu' }, '');
+});
 // Browser Back/Forward: Back from any game screen pops the 'game' entry and
 // lands on the main menu — resetGame abandons the run and shows the start
 // screen. Forward back into the game starts a fresh placement.
