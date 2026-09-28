@@ -59,6 +59,8 @@ let aiThinking; // true between the player's shot and the AI's reply:
 // while it is set are dropped before they can reach game.js.
 let armedTapKey; // last touch-tapped cell ("r,c"); a second tap confirms
 let previewKeys = new Set(); // cells currently showing a placement preview
+let previewAnchor; // {row,col} the preview is anchored at — needed so a
+// mid-hover ROTATE can repaint the preview for the new orientation
 
 /** 10×10 button matrix per board, filled by buildBoard(). */
 const cellEls = { player: [], enemy: [] };
@@ -111,7 +113,7 @@ function buildBoard(root, side) {
       });
       if (side === 'player') {
         btn.addEventListener('pointerenter', () => showPreview(row, col));
-        btn.addEventListener('click', () => handlePlacementClick(row, col));
+        btn.addEventListener('click', (e) => handlePlacementClick(row, col, e));
       } else {
         btn.addEventListener('click', () => handleFire(row, col));
       }
@@ -217,7 +219,11 @@ function clearPreview() {
  */
 function showPreview(row, col) {
   clearPreview();
-  if (!game || game.phase !== 'placement') return;
+  if (!game || game.phase !== 'placement') {
+    previewAnchor = null;
+    return;
+  }
+  previewAnchor = { row, col };
   const def = FLEET[game.placementIndex];
   const cells = shipCells(row, col, def.size, orientation);
   const valid = canPlaceShip(game.playerBoard, row, col, def.size, orientation);
@@ -239,8 +245,10 @@ function resetGame() {
   orientation = 'horizontal';
   aiThinking = false;
   armedTapKey = null;
+  previewAnchor = null;
   previewKeys = new Set();
   clearPreview();
+  els.rotateBtn.textContent = 'ROTATE: H';
   renderPlayerBoard();
   renderEnemyBoard();
   renderFleetStatus(els.playerFleet, game.playerBoard);
@@ -261,10 +269,12 @@ function handleStart() {
   setStatus(`Place your ${def.name} (${def.size})`);
 }
 
-/** ROTATE button / R key: toggles ship orientation and refreshes preview. */
+/** ROTATE button / R key: toggles ship orientation and repaints the
+ * preview at its current anchor so it never shows the old orientation. */
 function handleRotate() {
   orientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
   els.rotateBtn.textContent = `ROTATE: ${orientation === 'horizontal' ? 'H' : 'V'}`;
+  if (previewAnchor) showPreview(previewAnchor.row, previewAnchor.col);
 }
 
 /** UNDO button: removes the most recently placed ship. */
@@ -283,11 +293,14 @@ function handleUndo() {
  * confirm on the second tap of the same cell; mouse clicks place directly
  * (the hover preview is already visible).
  * @param {number} row @param {number} col
+ * @param {MouseEvent} e - the click; `e.detail === 0` marks a
+ *   keyboard-generated activation (Tab+Enter), which must place immediately
+ *   regardless of the last pointer type.
  */
-function handlePlacementClick(row, col) {
+function handlePlacementClick(row, col, e) {
   if (!game || game.phase !== 'placement') return;
   const k = cellKey(row, col);
-  if (pointerWasTouch && armedTapKey !== k) {
+  if (e.detail !== 0 && pointerWasTouch && armedTapKey !== k) {
     armedTapKey = k;
     showPreview(row, col);
     return;
@@ -299,6 +312,7 @@ function handlePlacementClick(row, col) {
     showPreview(row, col);
     return;
   }
+  previewAnchor = null;
   clearPreview();
   renderPlayerBoard();
   if (res.done) {

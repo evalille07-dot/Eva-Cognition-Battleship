@@ -394,9 +394,21 @@ body {
     gap: 24px;
   }
 
-  /* 94vw at 390px leaves ~33px per cell after labels/gaps (>= 32px rule). */
+  /* If a phone is too narrow for 10 x 32px cells, the wrap scrolls
+     horizontally instead of shrinking the cells below the tap target. */
+  .board-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  /* minmax(32px) floors every cell at 32px; at 375px the board still fits
+     (~33px cells), narrower viewports scroll. */
   .board {
-    width: 94vw;
+    grid-template-columns: 12px repeat(10, minmax(32px, 1fr));
+    grid-template-rows: 12px repeat(10, minmax(32px, 1fr));
+    gap: 1px;
+    padding: 2px;
+    width: 96vw;
     max-width: 420px;
   }
 }

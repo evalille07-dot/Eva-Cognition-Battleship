@@ -90,14 +90,26 @@ function computeTargets(pendingHits, tried) {
     const rowRun = contiguousRun(h, 'row');
     const colRun = contiguousRun(h, 'col');
     if (rowRun.length >= 2) {
-      // Line lock on this row: fire only at the two extension cells.
+      // Line lock on this row: the extension cells are queued first.
       for (const c of rowRun) visited.add(key(h.row, c));
       push(lineCandidates, h.row, rowRun[0] - 1);
       push(lineCandidates, h.row, rowRun[rowRun.length - 1] + 1);
+      // Off-axis neighbours stay queued behind the line extensions: if these
+      // hits actually came from a touching ship crossing the line (rather
+      // than one ship), the AI still closes in once the line fails instead
+      // of falling back to random hunt with unresolved hits.
+      for (const c of rowRun) {
+        push(neighbourCandidates, h.row - 1, c);
+        push(neighbourCandidates, h.row + 1, c);
+      }
     } else if (colRun.length >= 2) {
       for (const r of colRun) visited.add(key(r, h.col));
       push(lineCandidates, colRun[0] - 1, h.col);
       push(lineCandidates, colRun[colRun.length - 1] + 1, h.col);
+      for (const r of colRun) {
+        push(neighbourCandidates, r, h.col - 1);
+        push(neighbourCandidates, r, h.col + 1);
+      }
     } else {
       // Isolated hit: probe all four orthogonal neighbours.
       visited.add(hk);
