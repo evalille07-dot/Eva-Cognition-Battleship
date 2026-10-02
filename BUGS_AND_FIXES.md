@@ -170,6 +170,6 @@ Real bugs found during development (not planned work).
   the *menu* was showing — so the Forward branch returned early on exactly
   the state it was meant to handle.
 - **Fix:** The guard now checks `!els.gameScreen.hidden`, i.e. "already on
-  the game screen" (commit below).
+  the game screen" (commit `f16abc1`).
 - **Prevention:** E2E test "browser Forward re-enters placement after Back"
   in `tests/e2e/game.spec.js`.
