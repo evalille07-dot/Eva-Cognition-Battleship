@@ -217,6 +217,20 @@ test('Back during the AI turn cancels its pending reply', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('browser Forward re-enters placement after Back to the menu', async ({ page }) => {
+  const errors = watchConsole(page);
+  await page.goto(`/?seed=${SEED}`);
+  await page.getByRole('button', { name: 'START' }).click();
+  await page.goBack();
+  await expect(page.locator('#status-line')).toHaveText('READY');
+  // Forward must land on a fresh placement, not stay stuck on the menu.
+  await page.goForward();
+  await expect(page.locator('#game-screen')).toBeVisible();
+  await expect(page.locator('#status-line')).toHaveText('Place your Carrier (5)');
+  await expect(page.locator('#player-board .cell-ship')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 // Check the two narrowest common phone widths — 375px is the tight case.
 for (const viewport of [
   { width: 390, height: 844 },

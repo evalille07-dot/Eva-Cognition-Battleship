@@ -158,3 +158,18 @@ Real bugs found during development (not planned work).
   PLAY AGAIN + START still lands on the main menu", "Back after reload on a
   game entry still lands on the main menu", and "Back during the AI turn
   cancels its pending reply".
+
+## 12. Browser Forward from the menu did nothing
+
+- **Bug:** After Back reached the main menu, the browser Forward button was
+  a no-op — it never re-entered the game.
+- **How found:** E2E sanity check of navigation during the sound-effects
+  testing session.
+- **Root cause:** The `popstate` guard meant to skip redundant handling
+  while already in-game checked `!els.startScreen.hidden` — true whenever
+  the *menu* was showing — so the Forward branch returned early on exactly
+  the state it was meant to handle.
+- **Fix:** The guard now checks `!els.gameScreen.hidden`, i.e. "already on
+  the game screen" (commit below).
+- **Prevention:** E2E test "browser Forward re-enters placement after Back"
+  in `tests/e2e/game.spec.js`.
