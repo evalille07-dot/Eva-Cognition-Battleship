@@ -470,7 +470,7 @@ els.playAgainBtn.addEventListener('click', () => {
 // screen. Forward back into the game starts a fresh placement.
 window.addEventListener('popstate', (e) => {
   if (e.state && e.state.screen === 'game') {
-    if (!els.startScreen.hidden) return; // already on the game screen
+    if (!els.gameScreen.hidden) return; // already on the game screen
     resetGame();
     handleStart({ push: false });
   } else if (els.startScreen.hidden || !els.endOverlay.hidden) {
