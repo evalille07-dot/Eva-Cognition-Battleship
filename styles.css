@@ -161,8 +161,11 @@ body {
 }
 
 /* Sound toggle lives in the header, visible on every screen. */
+/* Above #end-overlay (z-index 60) so sound can be toggled on the end screen. */
 #mute-btn {
   margin-top: 12px;
+  position: relative;
+  z-index: 61;
 }
 
 /* Muted (pressed) state: dimmed like a disabled control. */

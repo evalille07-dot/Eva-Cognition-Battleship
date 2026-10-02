@@ -116,6 +116,29 @@ test('full game: place ships, fire until victory, stats, play again resets', asy
   expect(errors).toEqual([]);
 });
 
+test('SOUND button stays clickable over the end overlay', async ({ page }) => {
+  const errors = watchConsole(page);
+  await page.goto(`/?seed=${SEED}`);
+  await page.getByRole('button', { name: 'START' }).click();
+  await placePlayerFleet(page);
+
+  for (const c of enemyCellsFor(SEED)) {
+    await fireAndAwaitTurn(page, c.row, c.col);
+    if (await page.locator('#end-overlay').isVisible()) break;
+  }
+
+  await expect(page.locator('#end-overlay')).toBeVisible();
+  const muteButton = page.locator('#mute-btn');
+  await expect(muteButton).toHaveText('SOUND: ON');
+  await muteButton.click();
+  await expect(muteButton).toHaveText('SOUND: OFF');
+  await expect(muteButton).toHaveAttribute('aria-pressed', 'true');
+  await muteButton.click();
+  await expect(muteButton).toHaveText('SOUND: ON');
+  await expect(muteButton).toHaveAttribute('aria-pressed', 'false');
+  expect(errors).toEqual([]);
+});
+
 test('battle input locking: clicks during AI turn and on fired cells are ignored', async ({ page }) => {
   const errors = watchConsole(page);
   await page.goto(`/?seed=${SEED}`);
