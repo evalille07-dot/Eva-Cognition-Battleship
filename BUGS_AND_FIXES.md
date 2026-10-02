@@ -173,3 +173,15 @@ Real bugs found during development (not planned work).
   the game screen" (commit `f16abc1`).
 - **Prevention:** E2E test "browser Forward re-enters placement after Back"
   in `tests/e2e/game.spec.js`.
+
+## 13. SOUND button was blocked by the end overlay
+
+- **Bug:** The SOUND button could not be clicked on the end screen, when the
+  victory or game-over jingle was playing.
+- **How found:** Live-site investigation of a user report that SOUND wouldn't
+  toggle — `elementFromPoint` showed `#end-overlay` covering the button.
+- **Root cause:** `#end-overlay` has `z-index: 60`, while the header's mute
+  button had no stacking level above it.
+- **Fix:** Positioned `#mute-btn` at `z-index: 61` (commit `d7ec5ae`).
+- **Prevention:** E2E test "SOUND button stays clickable over the end
+  overlay" toggles sound both ways with plain clicks and checks console errors.
