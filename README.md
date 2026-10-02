@@ -28,6 +28,7 @@ handy for reproducing a specific game.
 2. Take turns firing at the enemy grid.
 3. Sink all 5 enemy ships to win.
 4. Press **R** or tap **ROTATE** to turn a ship; **UNDO** removes the last one.
+5. **SOUND: ON/OFF** toggles the retro sound effects.
 
 ## Run the tests
 
@@ -49,6 +50,7 @@ npm run test:e2e       # Playwright only
 | `src/ai.js` | AI fleet placement and hunt-and-target shot selection. No DOM. |
 | `src/ui.js` | DOM rendering and event handling only. |
 | `src/rng.js` | Seedable RNG (mulberry32); all randomness goes through it. |
+| `src/sound.js` | Retro sound effects, synthesized with Web Audio (no audio files); muted via the SOUND button. |
 | `tests/unit/` | `node:test` unit tests, incl. a 1,000-game AI simulation. |
 | `tests/e2e/` | Playwright tests (full game, input locking, mobile viewport). |
 | `BUGS_AND_FIXES.md` | Log of real bugs found during development. |

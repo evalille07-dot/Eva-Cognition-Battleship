@@ -26,6 +26,7 @@ import {
 } from './game.js';
 import { createAI } from './ai.js';
 import { createRng, seedFromUrl } from './rng.js';
+import { play, sfxFor, isMuted, setMuted } from './sound.js';
 
 /** Pause before the AI fires so its turn is easy to follow. */
 const AI_TURN_DELAY_MS = 600;
@@ -46,6 +47,7 @@ const els = {
   endTitle: $('end-title'),
   endStats: $('end-stats'),
   playAgainBtn: $('play-again-btn'),
+  soundBtn: $('sound-btn'),
 };
 
 // ---- mutable session state (fully rebuilt on PLAY AGAIN) ----
@@ -277,6 +279,7 @@ function resetGame() {
 function handleStart({ push = true } = {}) {
   if (push) history.pushState({ screen: 'game' }, '');
   else history.replaceState({ screen: 'game' }, '');
+  play('start');
   els.startScreen.hidden = true;
   els.gameScreen.hidden = false;
   const def = FLEET[0];
@@ -286,6 +289,7 @@ function handleStart({ push = true } = {}) {
 /** ROTATE button / R key: toggles ship orientation and repaints the
  * preview at its current anchor so it never shows the old orientation. */
 function handleRotate() {
+  play('rotate');
   orientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
   els.rotateBtn.textContent = `ROTATE: ${orientation === 'horizontal' ? 'H' : 'V'}`;
   if (previewAnchor) showPreview(previewAnchor.row, previewAnchor.col);
@@ -295,6 +299,7 @@ function handleRotate() {
 function handleUndo() {
   const res = undoPlayerShip(game);
   if (!res.ok) return;
+  play('undo');
   clearPreview();
   armedTapKey = null;
   // Drop the preview anchor too — otherwise a later ROTATE repaints a
@@ -326,9 +331,11 @@ function handlePlacementClick(row, col, e) {
   const res = placePlayerShip(game, row, col, orientation);
   if (!res.ok) {
     // Invalid spot: flash the preview red rather than placing.
+    play('denied');
     showPreview(row, col);
     return;
   }
+  play('place');
   previewAnchor = null;
   clearPreview();
   renderPlayerBoard();
@@ -368,6 +375,7 @@ function handleFire(row, col) {
     endGame();
     return;
   }
+  play(sfxFor(res.result));
   aiThinking = true;
   setStatus(
     res.result === 'sunk'
@@ -390,6 +398,7 @@ function enemyTurn() {
     endGame();
     return;
   }
+  play(sfxFor(res.result));
   setStatus(
     res.result === 'sunk' ? `They sunk your ${res.ship.name}! Your turn: fire!` : 'Your turn: fire!'
   );
@@ -416,6 +425,7 @@ function endGame() {
     `<td data-stat="enemy-accuracy">${accuracyPercent(e.shots, e.hits).toFixed(1)}%</td></tr>` +
     `<tr><th>TOTAL TURNS</th><td colspan="2" data-stat="total-turns">${game.turnCount}</td></tr>` +
     '</tbody>';
+  play(won ? 'victory' : 'defeat');
   els.endOverlay.hidden = false;
   els.playAgainBtn.focus();
 }
@@ -434,6 +444,11 @@ history.replaceState({ screen: 'menu' }, '');
 els.startBtn.addEventListener('click', handleStart);
 els.rotateBtn.addEventListener('click', handleRotate);
 els.undoBtn.addEventListener('click', handleUndo);
+els.soundBtn.addEventListener('click', () => {
+  setMuted(!isMuted());
+  els.soundBtn.textContent = `SOUND: ${isMuted() ? 'OFF' : 'ON'}`;
+  els.soundBtn.setAttribute('aria-pressed', String(isMuted()));
+});
 els.playAgainBtn.addEventListener('click', () => {
   resetGame();
   // PLAY AGAIN shows the menu while history still sits on the game entry;

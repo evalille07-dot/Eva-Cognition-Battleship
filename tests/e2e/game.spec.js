@@ -217,6 +217,23 @@ test('Back during the AI turn cancels its pending reply', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('SOUND toggle flips label and the game runs error-free with audio on', async ({ page }) => {
+  const errors = watchConsole(page);
+  await page.goto(`/?seed=${SEED}`);
+  await page.getByRole('button', { name: 'START' }).click();
+  const soundBtn = page.locator('#sound-btn');
+  await expect(soundBtn).toHaveText('SOUND: ON');
+  await soundBtn.click();
+  await expect(soundBtn).toHaveText('SOUND: OFF');
+  await expect(soundBtn).toHaveAttribute('aria-pressed', 'true');
+  await soundBtn.click();
+  await expect(soundBtn).toHaveText('SOUND: ON');
+  // Sound-enabled path must not throw: place ships and fire a round.
+  await placePlayerFleet(page);
+  await fireAndAwaitTurn(page, 9, 9);
+  expect(errors).toEqual([]);
+});
+
 // Check the two narrowest common phone widths — 375px is the tight case.
 for (const viewport of [
   { width: 390, height: 844 },
