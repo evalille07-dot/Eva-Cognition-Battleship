@@ -185,3 +185,16 @@ Real bugs found during development (not planned work).
 - **Fix:** Positioned `#mute-btn` at `z-index: 61` (commit `d7ec5ae`).
 - **Prevention:** E2E test "SOUND button stays clickable over the end
   overlay" toggles sound both ways with plain clicks and checks console errors.
+
+## 14. Touch placement preview looked like a placed ship
+
+- **Bug:** On touch screens, a ship preview could be mistaken for a placed
+  ship; a confirming tap could also be swallowed by double-tap zoom.
+- **How found:** User report on mobile, reproduced live with Playwright iPhone
+  and Pixel emulation.
+- **Root cause:** The first tap only armed the preview without prompting for a
+  second tap, and cells lacked `touch-action` to suppress double-tap zoom.
+- **Fix:** Prompted for a confirming tap on valid previews and set
+  `touch-action: manipulation` on `.cell` (commit `9611a13`).
+- **Prevention:** E2E test "mobile: first tap previews with a tap-again
+  prompt, second tap places" checks the preview, placement, and touch action.

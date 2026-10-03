@@ -28,6 +28,7 @@ handy for reproducing a specific game.
 2. Take turns firing at the enemy grid.
 3. Sink all 5 enemy ships to win.
 4. Press **R** or tap **ROTATE** to turn a ship; **UNDO** removes the last one.
+5. On touch screens, tap a cell once to preview a ship, then tap it again to place it.
 
 ## Run the tests
 

@@ -81,6 +81,14 @@ function setStatus(text) {
   els.status.textContent = text;
 }
 
+/** Placement status line: prompts for the confirming tap while a touch preview is armed on a valid spot. */
+function setPlacementStatus() {
+  const def = FLEET[game.placementIndex];
+  const armedValid = armedTapKey !== null && previewAnchor &&
+    canPlaceShip(game.playerBoard, previewAnchor.row, previewAnchor.col, def.size, orientation);
+  setStatus(armedValid ? `Tap again to place your ${def.name}` : `Place your ${def.name} (${def.size})`);
+}
+
 /* ================= BOARD CONSTRUCTION ================= */
 
 /**
@@ -292,6 +300,7 @@ function handleRotate() {
   orientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
   els.rotateBtn.textContent = `ROTATE: ${orientation === 'horizontal' ? 'H' : 'V'}`;
   if (previewAnchor) showPreview(previewAnchor.row, previewAnchor.col);
+  if (game && game.phase === 'placement') setPlacementStatus();
 }
 
 /** UNDO button: removes the most recently placed ship. */
@@ -323,6 +332,7 @@ function handlePlacementClick(row, col, e) {
   if (e.detail !== 0 && pointerWasTouch && armedTapKey !== k) {
     armedTapKey = k;
     showPreview(row, col);
+    setPlacementStatus();
     return;
   }
   armedTapKey = null;
@@ -331,6 +341,7 @@ function handlePlacementClick(row, col, e) {
     play('invalid');
     // Invalid spot: flash the preview red rather than placing.
     showPreview(row, col);
+    setPlacementStatus();
     return;
   }
   play('place');
