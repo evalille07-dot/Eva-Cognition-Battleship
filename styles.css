@@ -236,6 +236,7 @@ body {
   color: var(--dim);
 }
 
+/* Prevent double-tap zoom from swallowing the confirming placement tap. */
 .cell {
   aspect-ratio: 1 / 1;
   min-width: 0;
@@ -244,6 +245,7 @@ body {
   background: rgba(0, 240, 255, 0.04);
   cursor: crosshair;
   font-family: inherit;
+  touch-action: manipulation;
 }
 
 .enemy-side .cell {
