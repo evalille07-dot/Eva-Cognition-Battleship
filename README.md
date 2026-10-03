@@ -28,7 +28,7 @@ handy for reproducing a specific game.
 2. Take turns firing at the enemy grid.
 3. Sink all 5 enemy ships to win.
 4. Press **R** or tap **ROTATE** to turn a ship; **UNDO** removes the last one.
-5. On touch screens, tap a cell once to preview a ship, then tap it again to place it.
+5. On touch screens, tap a cell to place the ship; invalid spots flash red.
 
 ## Run the tests
 
@@ -53,6 +53,9 @@ npm run test:e2e       # Playwright only
 | `tests/unit/` | `node:test` unit tests, incl. a 1,000-game AI simulation. |
 | `tests/e2e/` | Playwright tests (full game, input locking, mobile viewport). |
 | `BUGS_AND_FIXES.md` | Log of real bugs found during development. |
+
+For each deploy, bump the `?v=` query on `styles.css` and `src/ui.js` in
+`index.html`; the host sends no cache headers.
 
 ## AI behavior (medium)
 

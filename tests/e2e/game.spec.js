@@ -277,27 +277,41 @@ for (const viewport of [
       expect(errors).toEqual([]);
     });
 
-    test('mobile: first tap previews with a tap-again prompt, second tap places', async ({ page }) => {
+    test('mobile: a single tap places the ship', async ({ page }) => {
       const errors = watchConsole(page);
       await page.goto(`/?seed=${SEED}`);
       await page.getByRole('button', { name: 'START' }).tap();
 
       const carrierCell = page.locator('#player-board [data-row="0"][data-col="0"]');
       await carrierCell.tap();
-      await expect(page.locator('#status-line')).toHaveText('Tap again to place your Carrier');
-      await expect(page.locator('#player-board .cell-ship')).toHaveCount(0);
-
-      await carrierCell.tap();
       await expect(page.locator('#player-board .cell-ship')).toHaveCount(5);
       await expect(page.locator('#status-line')).toHaveText('Place your Battleship (4)');
 
       const invalidCell = page.locator('#player-board [data-row="2"][data-col="8"]');
       await invalidCell.tap();
+      await expect(page.locator('#player-board .cell-ship')).toHaveCount(5);
       await expect(page.locator('#status-line')).toHaveText('Place your Battleship (4)');
-      await invalidCell.tap();
-      await expect(page.locator('#status-line')).toHaveText('Place your Battleship (4)');
+      expect(await page.locator('#player-board .cell-preview-bad').count()).toBeGreaterThan(0);
+
+      await page.locator('#player-board [data-row="2"][data-col="0"]').tap();
+      await expect(page.locator('#player-board .cell-ship')).toHaveCount(9);
+      await expect(page.locator('#status-line')).toHaveText('Place your Cruiser (3)');
 
       expect(await carrierCell.evaluate((cell) => getComputedStyle(cell).touchAction)).toBe('manipulation');
+      expect(errors).toEqual([]);
+    });
+
+    test('mobile: single taps place the full fleet', async ({ page }) => {
+      const errors = watchConsole(page);
+      await page.goto(`/?seed=${SEED}`);
+      await page.getByRole('button', { name: 'START' }).tap();
+
+      for (const row of [0, 2, 4, 6, 8]) {
+        await page.locator(`#player-board [data-row="${row}"][data-col="0"]`).tap();
+      }
+
+      await expect(page.locator('#status-line')).toHaveText('Your turn: fire!');
+      await expect(page.locator('#player-board .cell-ship')).toHaveCount(17);
       expect(errors).toEqual([]);
     });
   });
