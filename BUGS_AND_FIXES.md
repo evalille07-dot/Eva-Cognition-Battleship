@@ -198,3 +198,18 @@ Real bugs found during development (not planned work).
   `touch-action: manipulation` on `.cell` (commit `9611a13`).
 - **Prevention:** E2E test "mobile: first tap previews with a tap-again
   prompt, second tap places" checks the preview, placement, and touch action.
+
+## 15. Real-device ship placement still required another tap
+
+- **Bug:** On a real phone, the Carrier still did not stay after the entry 14
+  fix.
+- **How found:** User report after redeployment; the issue was not
+  reproducible in Playwright iPhone/Pixel emulation.
+- **Root cause:** The two-tap confirmation relied on a second tap reaching
+  the same cell as a click, which real mobile browsers do not reliably
+  deliver, and the confirmation expectation was unclear. Without cache
+  headers, phones could also keep running a stale script.
+- **Fix:** Ships now place on a single tap, and the stylesheet and UI script
+  URLs are versioned in `index.html` (commit `c4422bb`).
+- **Prevention:** Touch-enabled E2E tests verify a single tap places one ship
+  (including an invalid spot) and that single taps can place the full fleet.
