@@ -2,8 +2,8 @@
  * src/ui.js — DOM rendering and event handling for Neon Battleship.
  *
  * This is the only module that touches the DOM. It renders the two boards,
- * runs the placement phase (hover preview / rotate / undo / two-tap on
- * touch), orchestrates the battle turns (600ms AI delay + click locking),
+ * runs the placement phase (hover preview / rotate / undo / touch placement),
+ * orchestrates the battle turns (600ms AI delay + click locking),
  * keeps the always-visible status line current, and shows the end overlay
  * with stats and PLAY AGAIN. Every rule decision is delegated to game.js;
  * every AI decision to ai.js; every random value comes from src/rng.js so a
@@ -61,7 +61,6 @@ let aiTimer; // pending enemyTurn timeout id — cleared on reset so a stale
 // AI reply from an abandoned game can't fire into a fresh one
 // this flag is the UI half of the turn lock — enemy-board clicks landing
 // while it is set are dropped before they can reach game.js.
-let armedTapKey; // last touch-tapped cell ("r,c"); a second tap confirms
 let previewKeys = new Set(); // cells currently showing a placement preview
 let previewAnchor; // {row,col} the preview is anchored at — needed so a
 // mid-hover ROTATE can repaint the preview for the new orientation
@@ -79,14 +78,6 @@ function coordName(row, col) {
 /** @param {string} text - message shown on the status line. */
 function setStatus(text) {
   els.status.textContent = text;
-}
-
-/** Placement status line: prompts for the confirming tap while a touch preview is armed on a valid spot. */
-function setPlacementStatus() {
-  const def = FLEET[game.placementIndex];
-  const armedValid = armedTapKey !== null && previewAnchor &&
-    canPlaceShip(game.playerBoard, previewAnchor.row, previewAnchor.col, def.size, orientation);
-  setStatus(armedValid ? `Tap again to place your ${def.name}` : `Place your ${def.name} (${def.size})`);
 }
 
 /* ================= BOARD CONSTRUCTION ================= */
@@ -117,15 +108,9 @@ function buildBoard(root, side) {
       btn.className = 'cell';
       btn.dataset.row = String(row);
       btn.dataset.col = String(col);
-      // pointerdown records the pointer type so click can distinguish a
-      // mouse click (place immediately) from a touch tap (first tap shows
-      // the preview, second tap on the same cell confirms).
-      btn.addEventListener('pointerdown', (e) => {
-        pointerWasTouch = e.pointerType === 'touch';
-      });
       if (side === 'player') {
         btn.addEventListener('pointerenter', () => showPreview(row, col));
-        btn.addEventListener('click', (e) => handlePlacementClick(row, col, e));
+        btn.addEventListener('click', () => handlePlacementClick(row, col));
       } else {
         btn.addEventListener('click', () => handleFire(row, col));
       }
@@ -134,9 +119,6 @@ function buildBoard(root, side) {
     }
   }
 }
-
-/** Tracks the most recent pointer type; used by the two-tap placement rule. */
-let pointerWasTouch = false;
 
 /* ================= RENDERING ================= */
 
@@ -258,7 +240,6 @@ function resetGame() {
   aiThinking = false;
   clearTimeout(aiTimer);
   aiTimer = undefined;
-  armedTapKey = null;
   previewAnchor = null;
   previewKeys = new Set();
   clearPreview();
@@ -300,7 +281,6 @@ function handleRotate() {
   orientation = orientation === 'horizontal' ? 'vertical' : 'horizontal';
   els.rotateBtn.textContent = `ROTATE: ${orientation === 'horizontal' ? 'H' : 'V'}`;
   if (previewAnchor) showPreview(previewAnchor.row, previewAnchor.col);
-  if (game && game.phase === 'placement') setPlacementStatus();
 }
 
 /** UNDO button: removes the most recently placed ship. */
@@ -308,7 +288,6 @@ function handleUndo() {
   const res = undoPlayerShip(game);
   if (!res.ok) return;
   clearPreview();
-  armedTapKey = null;
   // Drop the preview anchor too — otherwise a later ROTATE repaints a
   // preview at a cell the player abandoned by undoing.
   previewAnchor = null;
@@ -318,30 +297,17 @@ function handleUndo() {
 }
 
 /**
- * Player-board click during placement. Touch taps arm a preview first and
- * confirm on the second tap of the same cell; mouse clicks place directly
- * (the hover preview is already visible).
+ * Player-board click during placement; mouse clicks and touch taps both
+ * place the ship at the selected cell.
  * @param {number} row @param {number} col
- * @param {MouseEvent} e - the click; `e.detail === 0` marks a
- *   keyboard-generated activation (Tab+Enter), which must place immediately
- *   regardless of the last pointer type.
  */
-function handlePlacementClick(row, col, e) {
+function handlePlacementClick(row, col) {
   if (!game || game.phase !== 'placement') return;
-  const k = cellKey(row, col);
-  if (e.detail !== 0 && pointerWasTouch && armedTapKey !== k) {
-    armedTapKey = k;
-    showPreview(row, col);
-    setPlacementStatus();
-    return;
-  }
-  armedTapKey = null;
   const res = placePlayerShip(game, row, col, orientation);
   if (!res.ok) {
     play('invalid');
     // Invalid spot: flash the preview red rather than placing.
     showPreview(row, col);
-    setPlacementStatus();
     return;
   }
   play('place');

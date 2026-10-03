@@ -236,7 +236,7 @@ body {
   color: var(--dim);
 }
 
-/* Prevent double-tap zoom from swallowing the confirming placement tap. */
+/* Stops double-tap zoom from delaying or swallowing taps on the grid. */
 .cell {
   aspect-ratio: 1 / 1;
   min-width: 0;
